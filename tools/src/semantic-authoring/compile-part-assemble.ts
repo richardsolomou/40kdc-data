@@ -19,6 +19,7 @@ import { auraPart, namesUnboundRecipient } from "./compile-aura-parts.js";
 import { isForbiddenSetUp } from "./compile-set-up-placement.js";
 import { momentsAfterOwnUse, momentsEndingEarlierPart, momentsUnderUse, momentsWhileMarked } from "./compile-nested-moment.js";
 import { gatedMoment } from "./compile-usability-gate.js";
+import { preRollAfterDestruction } from "./compile-triggers.js";
 import { isTargetRef, resolveEntry } from "./compile-target-refs.js";
 import { optionalTargetGroup, severalTargets } from "./compile-target-groups.js";
 import { type ConditionOfPlan } from "./compile-connective-plan.js";
@@ -465,7 +466,7 @@ export function assemblePart(
   moments.forEach((moment, position) => { if (list[triggerIndexes[position]!]!.fragment === "WHEN") moments[position] = gatedMoment(moment, usabilityNodes); });
   const asTrigger = (nodes: Node[]) => nodes.length === 0 ? null : nodes.length === 1 ? nodes[0]! : nodes;
   const leading = moments.filter((_, position) => !delayed.dropped.has(position) && !partStarts.some((part) => part.moments.includes(position)));
-  let entryTrigger = asTrigger(leading);
+  let entryTrigger = preRollAfterDestruction(leading, triggerIndexes.map((index) => list[index]!), sourceText) ?? asTrigger(leading);
   // The end of the phase in which a named model was destroyed: the destruction's part holds the phase end for that phase.
   for (const position of delayed.nested) body = { type: "ability-part", trigger: moments[position]!, effect: body, duration: "phase" };
   let foldedPhase = false;

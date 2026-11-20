@@ -12,8 +12,28 @@ import { OWNED_EVENT_KINDS } from "./event-family.js";
 import { TRIGGER_ROLL_KINDS } from "./dice-families.js";
 import { ANTECEDENT } from "./antecedent-families.js";
 import { STEP_PHASES } from "./compile-step-window.js";
+import { exactSpan } from "./contracts.js";
+import { gatedMoment } from "./compile-usability-gate.js";
 
 type Node = Record<string, unknown>;
+
+export function preRollAfterDestruction(moments: Node[], leaves: readonly CompileLeaf[], sourceText?: string): Node | undefined {
+  if (!sourceText || moments.length !== 2 || leaves.length !== 2 || leaves.some((leaf) => leaf.fragment !== "WHEN")) return undefined;
+  const [destruction, roll] = moments as [Node, Node];
+  const [afterLeaf, beforeLeaf] = leaves as [CompileLeaf, CompileLeaf];
+  if (destruction.event !== "model-destroyed" || roll.event !== "before-roll" || destruction.condition || roll.subject) return undefined;
+  const victim = destruction.object;
+  if (!victim || typeof victim !== "object" || Array.isArray(victim) || (victim as Node).owner !== "friendly") return undefined;
+  if (afterLeaf.end_byte === undefined || beforeLeaf.end_byte === undefined
+    || !/^(?:just |immediately )?after\b/iu.test(exactSpan(sourceText, afterLeaf.start_byte, afterLeaf.end_byte))
+    || !/^[,\s]*$/u.test(exactSpan(sourceText, afterLeaf.end_byte, beforeLeaf.start_byte))
+    || !/^before (?:making )?its\b/iu.test(exactSpan(sourceText, beforeLeaf.start_byte, beforeLeaf.end_byte))) return undefined;
+
+  return gatedMoment({ ...roll, subject: "this-model" }, [
+    { type: "happened", parameters: { event: destruction.event, object: "this-model", window: "event", ...(destruction.filter ? { filter: destruction.filter } : {}) } },
+    { type: "matches", parameters: { subject: "this-model", filter: victim } },
+  ]);
+}
 
 const TRIGGERS: Record<string, Node> = {
   "event:charge": { event: "move-ended", filter: { move_types: ["charge"] } },

@@ -21,7 +21,7 @@
       "review_cases": [
         "Check that a 2 fails, a 3 succeeds, and a different model's Deadly Demise roll uses its own threshold. The window has closed once the first model's roll has been made."
       ],
-      "compiler_status": "The preview passed automated gates. Its two timing events act as alternatives. Resolve them into one activation window.",
+      "compiler_status": "Compiled successfully and passed the automated gates. Human review is pending.",
       "workbench_source_hash": "de114cd9e80a13b5b44f555b04e6f37e93db6bdce5f9ae8a5a392ccb9e2ab961",
       "pending_annotations": [
         {
@@ -166,13 +166,115 @@
       "review_cases": [
         "Check that an enemy that only started unravelling during the phase gives no reanimation. An enemy already unravelling when the phase began can still qualify after it leaves the aura. The range for picking a recipient is measured from the Monster that made the kill."
       ],
-      "compiler_status": "Encode the destruction event and recipient selection. Bind the phase-start state to the defeated enemy.",
+      "compiler_status": "Blocked on a designation predicate that can read the destroyed enemy’s Unravelling state at phase start.",
       "workbench_source_hash": "a22c8e11bd855fb8795a0ab149789f9203ffca4b715c29cac12ced6c91ae8a31",
       "pending_annotations": [
         {
+          "fragment": "WHEN",
+          "start_byte": 0,
+          "end_byte": 38,
+          "family": "use-window",
+          "version": 1,
+          "role": "RESTRICTION",
+          "parameters": {
+            "your_phases": [
+              "shooting"
+            ],
+            "opponent_phases": [],
+            "either_phases": [
+              "fight"
+            ]
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 40,
+          "end_byte": 77,
+          "family": "unit-filter",
+          "version": 20,
+          "role": "CONDITION",
+          "parameters": {
+            "side": "friendly",
+            "keywords": [
+              "MONSTER",
+              "NECRONS"
+            ]
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 78,
+          "end_byte": 92,
+          "family": "unit-owner",
+          "version": 1,
+          "role": "CONDITION",
+          "parameters": {
+            "owner": "friendly"
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 93,
+          "end_byte": 104,
+          "family": "event",
+          "version": 39,
+          "role": "EVENT",
+          "parameters": {
+            "kind": "unit-destroyed",
+            "by": "antecedent",
+            "object_owner": "enemy"
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 105,
+          "end_byte": 115,
+          "family": "unit-filter",
+          "version": 20,
+          "role": "CONDITION",
+          "parameters": {
+            "side": "enemy"
+          }
+        },
+        {
+          "fragment": "TARGET",
+          "start_byte": 117,
+          "end_byte": 171,
+          "family": "stratagem-target",
+          "version": 5,
+          "role": "RESTRICTION",
+          "parameters": {
+            "count": "one",
+            "side": "your-army",
+            "selects": "unit",
+            "keywords": [
+              "NECRONS"
+            ],
+            "match": "all",
+            "excluded_keywords": [
+              "MONSTER"
+            ]
+          }
+        },
+        {
+          "fragment": "TARGET",
+          "start_byte": 172,
+          "end_byte": 202,
+          "family": "unit-position",
+          "version": 30,
+          "role": "CONDITION",
+          "parameters": {
+            "kind": "within",
+            "inches": 6,
+            "of": "event-subject",
+            "subject": "this-unit",
+            "negated": false
+          }
+        },
+        {
           "fragment": "EFFECT",
           "start_byte": 266,
-          "end_byte": 320,
+          "end_byte": 319,
           "family": "ability-activate",
           "version": 5,
           "role": "EFFECT",
@@ -183,7 +285,7 @@
         },
         {
           "fragment": "RESTRICTIONS",
-          "start_byte": 353,
+          "start_byte": 321,
           "end_byte": 366,
           "family": "usage-limit",
           "version": 6,
@@ -192,7 +294,12 @@
             "frequency": "once-per-turn"
           }
         }
-      ]
+      ],
+      "unresolved": {
+        "fragment": "EFFECT",
+        "start_byte": 204,
+        "end_byte": 264
+      }
     },
     "phase-melding-pantheon-of-woe-necrons": {
       "name": "Phase Melding",
@@ -211,9 +318,101 @@
       "review_cases": [
         "Check that an unravelling unit that isn't Battle-shocked still tests for every model at the normal modifier. With Battle-shock, apply the penalty to each test. Keep the movement selection and the actual Fall Back as separate events."
       ],
-      "compiler_status": "Bind the move selection to the later Fall Back. Keep the friendly target distinct from the enemy models taking the tests.",
+      "compiler_status": "Compiled successfully and passed the automated gates. Human review is pending.",
       "workbench_source_hash": "47a6ec29e834d53e276174ec47efd5290c85d85fa65b7b37754f6b69eb325bfd",
       "pending_annotations": [
+        {
+          "fragment": "WHEN",
+          "start_byte": 0,
+          "end_byte": 32,
+          "family": "use-window",
+          "version": 1,
+          "role": "RESTRICTION",
+          "parameters": {
+            "your_phases": [],
+            "opponent_phases": [
+              "movement"
+            ],
+            "either_phases": []
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 34,
+          "end_byte": 64,
+          "family": "unit-filter",
+          "version": 20,
+          "role": "CONDITION",
+          "parameters": {
+            "side": "enemy",
+            "designated": "unravelling"
+          }
+        },
+        {
+          "fragment": "WHEN",
+          "start_byte": 65,
+          "end_byte": 89,
+          "family": "event",
+          "version": 39,
+          "role": "EVENT",
+          "parameters": {
+            "kind": "selected",
+            "owner": "enemy",
+            "move_types": [
+              "fall-back"
+            ],
+            "to": "move"
+          }
+        },
+        {
+          "fragment": "TARGET",
+          "start_byte": 91,
+          "end_byte": 126,
+          "family": "stratagem-target",
+          "version": 5,
+          "role": "RESTRICTION",
+          "parameters": {
+            "count": "one",
+            "side": "your-army",
+            "selects": "unit",
+            "keywords": [
+              "NECRONS"
+            ],
+            "match": "all",
+            "excluded_keywords": []
+          }
+        },
+        {
+          "fragment": "TARGET",
+          "start_byte": 127,
+          "end_byte": 177,
+          "family": "unit-state",
+          "version": 18,
+          "role": "CONDITION",
+          "parameters": {
+            "states": [
+              "engaged"
+            ],
+            "subject": "this-unit",
+            "negated": false,
+            "with": "event-subject"
+          }
+        },
+        {
+          "fragment": "EFFECT",
+          "start_byte": 178,
+          "end_byte": 209,
+          "family": "event",
+          "version": 39,
+          "role": "EVENT",
+          "parameters": {
+            "kind": "move-started",
+            "move_types": [
+              "fall-back"
+            ],
+            "subject": "event-subject"
+          }
+        },
         {
           "fragment": "EFFECT",
           "start_byte": 211,
@@ -230,7 +429,7 @@
         },
         {
           "fragment": "EFFECT",
-          "start_byte": 294,
+          "start_byte": 276,
           "end_byte": 329,
           "family": "unit-state",
           "version": 18,
@@ -281,9 +480,127 @@
         "A finish at exactly 6 inches horizontally fails the placement limit. A finish at exactly 8 inches triggers the charge block.",
         "Test both listed Displacement moves. An ordinary Deep Strike landing is outside the trigger."
       ],
-      "compiler_status": "Encode the horizontal move endpoint as an override of the Displacement distance. Bind the charge restriction to the end of the same move.",
+      "compiler_status": "Compiled successfully and passed the automated gates. Human review is pending.",
       "workbench_source_hash": "455bb4a121c01f5e972a8568df63c5dec2a79b36c0046380a66ff4a19013f30b",
       "pending_annotations": [
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 0,
+          "end_byte": 35,
+          "family": "bearer-eligibility",
+          "version": 8,
+          "role": "RESTRICTION",
+          "parameters": {
+            "keywords": [
+              "TRANSCENDENT C'TAN"
+            ],
+            "match": "all",
+            "excluded_keywords": []
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 37,
+          "end_byte": 49,
+          "family": "phase-window",
+          "version": 2,
+          "role": "CONDITION",
+          "parameters": {
+            "turn": "your"
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 51,
+          "end_byte": 99,
+          "family": "event",
+          "version": 39,
+          "role": "EVENT",
+          "parameters": {
+            "kind": "selected",
+            "move_types": [
+              "advance",
+              "ingress"
+            ],
+            "to": "move",
+            "subject": "this-unit"
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 100,
+          "end_byte": 151,
+          "family": "by-ability",
+          "version": 1,
+          "role": "CONDITION",
+          "parameters": {
+            "id": "transdimensional-displacement-necrons"
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 153,
+          "end_byte": 180,
+          "family": "move-must-end",
+          "version": 4,
+          "role": "RESTRICTION",
+          "parameters": {
+            "match": "all",
+            "polarity": "cannot",
+            "replaces": true
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 181,
+          "end_byte": 211,
+          "family": "unit-position",
+          "version": 30,
+          "role": "CONDITION",
+          "parameters": {
+            "kind": "within",
+            "inches": 6,
+            "of": "following-filter",
+            "subject": "this-unit",
+            "negated": false
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 212,
+          "end_byte": 227,
+          "family": "unit-filter",
+          "version": 20,
+          "role": "CONDITION",
+          "parameters": {
+            "side": "enemy"
+          }
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 229,
+          "end_byte": 252,
+          "family": "instead",
+          "version": 2,
+          "role": "COMBINATOR",
+          "parameters": {}
+        },
+        {
+          "fragment": "RAW_TEXT",
+          "start_byte": 255,
+          "end_byte": 284,
+          "family": "event",
+          "version": 39,
+          "role": "EVENT",
+          "parameters": {
+            "kind": "move-ended",
+            "move_types": [
+              "advance",
+              "ingress"
+            ],
+            "subject": "this-unit"
+          }
+        },
         {
           "fragment": "RAW_TEXT",
           "start_byte": 285,
@@ -302,7 +619,7 @@
         },
         {
           "fragment": "RAW_TEXT",
-          "start_byte": 326,
+          "start_byte": 313,
           "end_byte": 362,
           "family": "eligibility-permission",
           "version": 10,

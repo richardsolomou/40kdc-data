@@ -3,6 +3,7 @@ import { ATTACK_EVENTS } from "./compile-conditions.js";
 import type { CompileLeaf } from "./compile-fragments.js";
 import { subjectlessRoll } from "./compile-attack-frame.js";
 import { kindKey } from "./compile-triggers.js";
+import { replacesMoveEnd } from "./compile-move-end.js";
 
 /**
  * Where leaves sit in their ability: sentences and clauses from the source text between them,
@@ -176,7 +177,7 @@ export function placements(leaves: readonly CompileLeaf[], sourceText: string | 
   });
   // A sentence without an effect ("While this model is leading a unit.") only sets conditions
   // for what follows, so it joins the next sentence; the last one joins the one before.
-  const effectful = new Set(leaves.flatMap((leaf, index) => leaf.role === "EFFECT" ? [sentenceOf[index]!] : []));
+  const effectful = new Set(leaves.flatMap((leaf, index) => leaf.role === "EFFECT" || replacesMoveEnd(leaf) ? [sentenceOf[index]!] : []));
   const sentences = [...new Set(sentenceOf)];
   const merged = new Map<number, number>();
   let pending: number[] = [];

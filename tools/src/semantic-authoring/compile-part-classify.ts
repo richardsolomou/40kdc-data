@@ -19,7 +19,7 @@ import { isContainerOpener } from "./compile-containers.js";
 import { WRAP_CONDITION_FAMILIES } from "./compile-wrappers.js";
 import { namesSelection, onAttackedTarget } from "./compile-targeting-history.js";
 import { usabilityGates } from "./compile-usability-gate.js";
-import { type MoveEndRule } from "./compile-move-end.js";
+import { replacesMoveEnd, type MoveEndRule } from "./compile-move-end.js";
 import type { CoreCheck } from "./core-checks.js";
 import { usageFor } from "./restriction-families.js";
 import { bindPairEligibility, candidateIndexes, pairIndexes } from "./compile-pair-eligibility.js";
@@ -74,14 +74,14 @@ export function classifyLeaves(given: CompileLeaf[], places: Placement[], contai
     }
   };
 
-  const effectSentences = new Set(list.flatMap((leaf, index) => leaf.role === "EFFECT" ? [places[index]!.sentence] : []));
+  const effectSentences = new Set(list.flatMap((leaf, index) => leaf.role === "EFFECT" || replacesMoveEnd(leaf) ? [places[index]!.sentence] : []));
   const firstSentence = Math.min(...effectSentences);
   // "If A, do X. If B, do Y instead.": the instead sentence has its own condition, so an "if" condition of the first
   // sentence gates that sentence only; as an ability-wide gate it would also guard the replacement (compile-instead-scope.ts).
   const ownGates = conditionedInsteadAfter(list, places, firstSentence) ? ifGatedConditions(list, places, firstSentence, sourceText) : sentenceIfGates(list, places, rawSentences(list, sourceText), firstSentence, sourceText);
   // "If A, X, and if B, Y": each leading condition with an "and if" sibling gates only its clause.
   const siblingScoped = siblingClauseConditions(list, places, sourceText);
-  const firstEffect = (sentence: number) => list.findIndex((leaf, index) => leaf.role === "EFFECT" && places[index]!.sentence === sentence);
+  const firstEffect = (sentence: number) => list.findIndex((leaf, index) => (leaf.role === "EFFECT" || replacesMoveEnd(leaf)) && places[index]!.sentence === sentence);
   // A unit selection ahead of the leaf at `index`.
   const selectedBefore = (index: number) => list.some((leaf, at) => at < index && leaf.family_id === "select-unit");
   const attached = list.some((leaf) => leaf.family_id === "leading-unit");
@@ -219,7 +219,17 @@ export function classifyLeaves(given: CompileLeaf[], places: Placement[], contai
   const anyEffectBefore = (index: number) => list.slice(0, index).some((leaf) => leaf.role === "EFFECT");
   const partMomentsBefore = (index: number): number[] => {
     const moment = [...triggerIndexes].reverse().find((at) => at < index);
-    if (moment === undefined || rawOf[moment] !== rawOf[index] || !anyEffectBefore(moment)) return [];
+    if (moment === undefined || rawOf[moment] !== rawOf[index]) return [];
+    const event = list[moment]!;
+    const leaf = list[index]!;
+    // "When this unit ends its move within 8 inches": check the distance at the moment the move ends.
+    if (moment === index - 1 && event.fragment !== "WHEN" && event.parameters.kind === "move-ended"
+      && event.parameters.by_ability !== undefined && leaf.family_id === "unit-position"
+      && sourceText !== undefined && event.end_byte !== undefined
+      && /^[\s*]*$/u.test(exactSpan(sourceText, event.end_byte, leaf.start_byte))) {
+      return [triggerIndexes.indexOf(moment)];
+    }
+    if (!anyEffectBefore(moment)) return [];
     // An attack moment between ("… each time a model makes a melee attack") owns the condition instead.
     if (list.slice(moment + 1, index).some((leaf) => leaf.role === "EFFECT" || leaf.role === "EVENT")) return [];
     // The part's effects run to the next moment (a roll or a selection is not one); when they all share the condition's sentence its sentence gate already covers them.

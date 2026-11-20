@@ -15,6 +15,10 @@ export type PlacedNode = { index: number; node: Node };
 /** Builds the DSL node for one condition leaf (the caller's compile step); null when it does not compile. */
 export type ConditionBuilder = (leaf: CompileLeaf) => Node | null;
 
+export function replacesMoveEnd(leaf: CompileLeaf): boolean {
+  return leaf.family_id === "move-must-end" && leaf.parameters.replaces === true;
+}
+
 /**
  * "…, and cannot end that move within Engagement Range of them", "must end that charge move engaged",
  * and "after moving, this unit must be more than 8\" horizontally from all enemy units": the restriction's

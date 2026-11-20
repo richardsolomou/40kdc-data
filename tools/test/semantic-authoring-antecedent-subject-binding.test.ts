@@ -15,7 +15,7 @@ const ANTECEDENT_SUBJECT_BINDING_VERSIONS: ReadonlySet<string> = new Set(["unit-
 type Item = [string, string, Record<string, unknown>, string?];
 
 /** Leaves placed by their wording in `text`, in order, normalized as the current family version reads them. */
-function compileItems(text: string, items: Item[]) {
+function compileItems(text: string, items: Item[], abilityId?: string) {
   const bytes = Buffer.from(text, "utf8");
   let from = 0;
   const leaves: CompileLeaf[] = items.map(([wording, family, parameters, fragment]) => {
@@ -25,7 +25,7 @@ function compileItems(text: string, items: Item[]) {
     const version = currentFamilyVersion(family);
     return { role: familyRole(family, version), family_id: family, family_version: version, parameters: normalizeFingerprintParameters(family, parameters, version), start_byte: start, end_byte: from, fragment: fragment ?? "RAW_TEXT" };
   });
-  return compileLeaves(leaves, text);
+  return compileLeaves(leaves, text, { abilityId });
 }
 
 function mechanicsOf(text: string, items: Item[]): Record<string, any> {
@@ -49,6 +49,45 @@ const PREVIOUS = (family: string) => {
 };
 
 const json = (value: unknown) => JSON.stringify(value);
+
+it("keeps a destroyed model's pre-roll window on one trigger", () => {
+  const text = "After a friendly DEMO model is eliminated, before its Deadly Demise check. Pick that DEMO model. Its Deadly Demise succeeds on 3+.";
+  const mechanics = mechanicsOf(text, [
+    ["After a friendly DEMO model is eliminated", "event", { kind: "model-destroyed", object_owner: "friendly", object_keywords: ["DEMO"] }, "WHEN"],
+    ["before its Deadly Demise check", "event", { kind: "before-roll", roll: "deadly-demise" }, "WHEN"],
+    ["Pick that DEMO model", "stratagem-target", { count: "one", selects: "model", side: "your-army", keywords: ["DEMO"], excluded_keywords: [], match: "all" }, "TARGET"],
+    ["Its Deadly Demise succeeds on 3+", "roll-auto-result", { roll: "deadly-demise", outcome: "succeeds-on", value: 3, subject: "this-model" }, "EFFECT"],
+  ]);
+  expect(mechanics.trigger).toEqual({
+    event: "before-roll",
+    subject: "this-model",
+    filter: { roll: "deadly-demise" },
+    condition: {
+      operator: "and",
+      operands: [
+        { type: "happened", parameters: { event: "model-destroyed", object: "this-model", window: "event" } },
+        { type: "matches", parameters: { subject: "this-model", filter: { owner: "friendly", all_of: ["DEMO"], level: "model" } } },
+      ],
+    },
+  });
+});
+
+it("limits a destroyed model's targeting permission to the current stratagem", () => {
+  const text = "Pick a friendly DEMO model. You can use this Stratagem on the model after it is removed. Gain one Command point.";
+  const result = compileItems(text, [
+    ["Pick a friendly DEMO model", "stratagem-target", { count: "one", selects: "model", side: "your-army", keywords: ["DEMO"], excluded_keywords: [], match: "all" }, "TARGET"],
+    ["You can use this Stratagem on the model after it is removed", "eligibility-permission", { subject: "this-model", activity: "use-stratagem", allow: true, despite: ["destroyed"] }, "TARGET"],
+    ["Gain one Command point", "resource-action", { resource: "command-point", operation: "gain", amount: 1 }, "EFFECT"],
+  ], "test-stratagem");
+  if (!result.ok) throw new Error(result.errors.join("; "));
+  expect(result.mechanics.effect).toMatchObject({
+    type: "sequence",
+    steps: [
+      { type: "permission", modifier: { activity: "use-stratagem", stratagem: "test-stratagem", despite: ["destroyed"] } },
+      { type: "cp-gain" },
+    ],
+  });
+});
 
 describe("ability-modifier antecedent (SS-B)", () => {
   const text = "Friendly DEMO units. Add 3\" to that unit's Reach range, to a maximum of 12\".";

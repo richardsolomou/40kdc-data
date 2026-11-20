@@ -365,7 +365,7 @@ describe("feasibility proviso on a distance bonus (2306 shape)", () => {
   });
 });
 
-describe("ability-scoped charge ban on the ability's move (9046 sentence 2, not yet authored)", () => {
+describe("ability-scoped charge ban on the ability's move", () => {
   const text = "Each time your unit is picked to make a Normal move with the Quantum Gadget ability, your unit can end that move more than 6\" from all enemy units. When this unit ends that move within 8\" of an enemy unit, this unit is not eligible to declare a charge until the end of the turn.";
   const list = () => placed(text,
     ["is picked to make a Normal move", "event", { kind: "selected", move_types: ["normal"] }],
@@ -373,25 +373,32 @@ describe("ability-scoped charge ban on the ability's move (9046 sentence 2, not 
     ["can end that move", "move-must-end", { match: "all", polarity: "cannot", replaces: true }],
     ["more than 6\" from", "unit-position", { kind: "within", inches: 6, subject: "this-unit", negated: false, of: "following-filter" }],
     ["enemy units", "unit-filter", { side: "enemy" }],
-    ["ends that move within 8\"", "event", { kind: "move-ended", move_types: ["normal", "advance"] }],
+    ["ends that move", "event", { kind: "move-ended", move_types: ["normal", "advance"] }],
+    ["within 8\" of an enemy unit", "unit-position", { kind: "within", inches: 8, subject: "this-unit", negated: false, of: "matching-unit", of_side: "enemy" }],
     ["not eligible to declare a charge", "eligibility-permission", { subject: "this-unit", activity: "declare-charge", allow: false }],
+    ["until the end of the turn", "duration", { endpoint: "end-of-turn" }],
   );
 
-  // The record compiles today; only the ability scope is missing. The expected-failure test asserts
-  // a successful compile first, so it can fail only on the missing condition, not on a refusal.
-  it("compiles sentence 2 with its trigger and permission, with no ability condition yet", () => {
-    expect(compileLeaves(list(), text).ok).toBe(true);
+  it("checks that the ending move is the Normal move made through the named ability", () => {
+    const mechanics = compiled(list(), text);
+    const triggers = nodesWhere(mechanics, (node) => node.event === "move-ended");
+    expect(triggers).toMatchObject([{
+      filter: { move_types: ["normal"] },
+      condition: { operator: "and", operands: expect.arrayContaining([
+        { type: "happened", parameters: { event: "used", filter: { kind: "ability", id: "quantum-gadget" }, window: "event" } },
+      ]) },
+    }]);
   });
 
-  // Expected output, not yet produced: each permission follows a trigger that names the ability's
-  // move. Sentence 2 cannot yet bind to sentence 1's move, so this test is expected to fail.
-  it.fails("gives every permission trigger the ability condition", () => {
-    const result = compileLeaves(list(), text);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    const triggers = nodesWhere(result.mechanics, (node) => node.event !== undefined || node.kind !== undefined);
-    expect(triggers.length).toBeGreaterThan(0);
-    for (const trigger of triggers) expect(JSON.stringify(trigger)).toContain("happened");
+  it("uses six inches for the move end and eight inches for the charge ban", () => {
+    const mechanics = compiled(list(), text);
+    expect(nodesWhere(mechanics, (node) => node.type === "move-modifier")).toMatchObject([{
+      modifier: { ends_when: { operands: [{ parameters: { filter: { within: { range: { inches: 6 } } } } }] } },
+    }]);
+    const [part] = nodesWhere(mechanics, (node) => node.type === "ability-part" && node.trigger?.event === "move-ended");
+    expect(nodesWhere(part?.trigger, (node) => node.type === "matches")).toMatchObject([{
+      parameters: { filter: { within: { range: { inches: 8 } } } },
+    }]);
   });
 });
 

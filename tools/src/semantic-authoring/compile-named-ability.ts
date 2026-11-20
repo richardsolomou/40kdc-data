@@ -10,6 +10,7 @@ import { dslUnitFilter } from "./compile-unit-filter-dsl.js";
 import { ANTECEDENT } from "./antecedent-families.js";
 import { FILTERED_UNITS } from "./compile-antecedent.js";
 import { setUpWindow } from "./compile-history-values.js";
+import { exactSpan } from "./contracts.js";
 
 type Node = Record<string, unknown>;
 
@@ -121,6 +122,7 @@ function pairedDestruction(list: readonly CompileLeaf[], index: number, sourceTe
 
 /** Moments a `by-ability` leaf can say happened through an ability. */
 const BY_ABILITY_MOMENTS = new Set(["targets-selected", "move-ended", "move-started", "selected", "set-up"]);
+const MOVE_MOMENTS = new Set(["selected", "move-started", "move-ended"]);
 
 /**
  * "pinned by a friendly X unit's Foo ability", "a move made using its Bar ability": the ability
@@ -192,7 +194,22 @@ export function foldByAbility(list: readonly CompileLeaf[], sourceText?: string)
     out[out.length - 1] = { ...moment, parameters: { ...moment.parameters, by_ability: id } };
     out.push(...arrival);
   }
-  return out;
+  if (sourceText === undefined) return out;
+  let move: CompileLeaf | undefined;
+  return out.map((leaf) => {
+    if (leaf.family_id !== "event" || !MOVE_MOMENTS.has(String(leaf.parameters.kind))) return leaf;
+    const { kind, subject = "this-unit", by_ability } = leaf.parameters;
+    const sameMove = kind === "move-ended" && leaf.end_byte !== undefined
+      && /\bends? that move\b/iu.test(exactSpan(sourceText, leaf.start_byte, leaf.end_byte))
+      && move !== undefined && move.fragment === leaf.fragment && (move.parameters.subject ?? "this-unit") === subject;
+    if (sameMove && by_ability === undefined && move?.parameters.by_ability !== undefined) {
+      const { by_ability: abilityId, move_types } = move.parameters;
+      move = { ...leaf, parameters: { ...leaf.parameters, by_ability: abilityId, ...(move_types !== undefined ? { move_types } : {}) } };
+      return move;
+    }
+    move = leaf;
+    return leaf;
+  });
 }
 
 /**

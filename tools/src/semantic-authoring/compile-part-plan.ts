@@ -7,7 +7,7 @@ import { groupPermissionAttacks } from "./compile-permission-attacks.js";
 import { effect, type CompileLeaf } from "./compile-fragments.js";
 import { ATTACK_EVENTS, condition } from "./compile-conditions.js";
 import { bindDurations, CONFLICTING_DURATIONS, NO_ROLL_PLUS_SIX } from "./compile-durations.js";
-import { triggerMoveEnd } from "./compile-move-end.js";
+import { replacesMoveEnd, triggerMoveEnd } from "./compile-move-end.js";
 import { attachMoveEndNearest, bindEngagedPermissions, isBonusNode } from "./compile-move-end-nearest.js";
 import { defenderBoundBefore } from "./compile-attack-frame.js";
 import { attackFold, isAttackMoment, triggerWindow } from "./compile-attack-window.js";
@@ -81,6 +81,12 @@ export function planEffects(frame: PartFrame, sourceText: string | undefined, op
         defended: currentMoment?.family_id === "event" && currentMoment.parameters.kind === "damage-allocated",
         allocatedTo: currentMoment?.parameters.object,
       });
+      if (leaf.fragment === "TARGET" && leaf.family_id === "eligibility-permission" && leaf.parameters.activity === "use-stratagem"
+        && leaf.parameters.allow === true && Array.isArray(leaf.parameters.despite) && leaf.parameters.despite.includes("destroyed")
+        && sourceText !== undefined && leaf.end_byte !== undefined && options.abilityId !== undefined
+        && /\bthis\s+stratagem\b/iu.test(exactSpan(sourceText, leaf.start_byte, leaf.end_byte))) {
+        (compiled.modifier as Node).stratagem = options.abilityId;
+      }
       // "… are selected as a target …, each time an attack targets that unit": the attacks on the moment's
       // targeted unit (its object, folded from the filter before it), not every attack the enemy makes.
       const attackAt = attack === undefined ? -1 : list.indexOf(attack);
@@ -127,7 +133,7 @@ export function planEffects(frame: PartFrame, sourceText: string | undefined, op
   // "…, subtract 1 from the Wound roll as well": the earlier sentence's attacks (compile-attack-continuation.ts).
   attempt(() => inheritAttackFrames(list, places, planned, sourceText, condition));
   // A move-end nearest or a replacing move-must-end is an effect in its own right (it changes the move).
-  const movesEnd = list.some((leaf) => leaf.family_id === "move-end-nearest" || (leaf.family_id === "move-must-end" && leaf.parameters.replaces === true));
+  const movesEnd = list.some((leaf) => leaf.family_id === "move-end-nearest" || replacesMoveEnd(leaf));
   if (list.every((leaf) => leaf.role !== "EFFECT") && !movesEnd) errors.push("There is no effect leaf to compile.");
   // Several printed durations: each effect takes its clause's duration, else its sentence's (compile-durations.ts).
   // Bound before the "instead" fold below, which removes an effect and moves its duration to the one it folds into.
@@ -143,7 +149,7 @@ export function planEffects(frame: PartFrame, sourceText: string | undefined, op
     && list.some((leaf, index) => leaf.role === "EFFECT" && places[index]!.sentence < places[lateAt]!.sentence && leaf.fragment === list[lateAt]!.fragment
       && leaf.end_byte !== undefined && /[\r\n]/u.test(exactSpan(sourceText, leaf.end_byte, list[lateAt]!.start_byte)));
   const split = fold === null && (new Set(durations).size > 1 || lateDuration);
-  const firstEffectAt = list.findIndex((leaf) => leaf.role === "EFFECT");
+  const firstEffectAt = list.findIndex((leaf) => leaf.role === "EFFECT" || replacesMoveEnd(leaf));
   const leadingAt = [...new Set(triggerIndexes.filter((index) => firstEffectAt === -1 || index < firstEffectAt))];
   const binding = split ? bindDurations(list, places, durationAt, planned.map((item) => item.index), leadingAt, sourceText) : null;
   if (binding?.error) errors.push(binding.error);

@@ -14,6 +14,7 @@ import { momentsAfterDestruction, momentsAfterThisUse } from "./compile-nested-m
 import { chainPerPass, namedSelectionChain } from "./compile-named-selections.js";
 import { bindNearFriendlyTarget } from "./compile-near-friendly-target.js";
 import { groupedTargetRestrictions } from "./compile-target-groups.js";
+import { replacesMoveEnd } from "./compile-move-end.js";
 import type { PartFrame } from "./compile-part-classify.js";
 import type { PlannedEffect, planEffects } from "./compile-part-plan.js";
 
@@ -38,7 +39,7 @@ export function bindParts(frame: PartFrame, plan: ReturnType<typeof planEffects>
   // Moments before the first effect are the ability's own (several are alternatives: "selected
   // to shoot or to fight"). A moment after an effect starts a part of a compound ability: the
   // effects from it to the next such moment fire then, as one bullet of the same ability.
-  const firstEffectIndex = list.findIndex((leaf) => leaf.role === "EFFECT");
+  const firstEffectIndex = list.findIndex((leaf) => leaf.role === "EFFECT" || replacesMoveEnd(leaf));
   const partStarts: Array<{ index: number; moments: number[] }> = [];
   triggerIndexes.forEach((index, position) => {
     if (firstEffectIndex === -1 || index < firstEffectIndex) return;

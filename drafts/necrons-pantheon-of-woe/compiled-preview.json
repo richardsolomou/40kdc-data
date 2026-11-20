@@ -1,0 +1,424 @@
+{
+  "status": "unsigned workbench output for review",
+  "abilities": {
+    "disharmonisation-cascade-pantheon-of-woe-necrons": [
+      {
+        "path": "data/enrichment/necrons/abilities.json",
+        "record": {
+          "ability_id": "disharmonisation-cascade-pantheon-of-woe-necrons",
+          "name": "Disharmonisation Cascade",
+          "authored_by": "40kdc-community",
+          "game_version": {
+            "edition": "11th",
+            "dataslate": "2026-10-14"
+          },
+          "unit_ids": [],
+          "faction_id": "necrons",
+          "detachment_id": "pantheon-of-woe",
+          "ability_type": "stratagem",
+          "effect": {
+            "type": "sequence",
+            "steps": [
+              {
+                "type": "permission",
+                "target": "this-model",
+                "modifier": {
+                  "activity": "use-stratagem",
+                  "allow": true,
+                  "despite": [
+                    "destroyed"
+                  ],
+                  "stratagem": "disharmonisation-cascade-pantheon-of-woe-necrons"
+                }
+              },
+              {
+                "type": "roll-result",
+                "target": "this-model",
+                "modifier": {
+                  "roll": "deadly-demise",
+                  "succeeds_on": 3
+                }
+              }
+            ]
+          },
+          "scope": {
+            "duration": "phase"
+          },
+          "behavior": "reactive",
+          "trigger": {
+            "event": "before-roll",
+            "filter": {
+              "roll": "deadly-demise"
+            },
+            "subject": "this-model",
+            "condition": {
+              "operator": "and",
+              "operands": [
+                {
+                  "type": "happened",
+                  "parameters": {
+                    "event": "model-destroyed",
+                    "object": "this-model",
+                    "window": "event"
+                  }
+                },
+                {
+                  "type": "matches",
+                  "parameters": {
+                    "subject": "this-model",
+                    "filter": {
+                      "owner": "friendly",
+                      "all_of": [
+                        "MONSTER",
+                        "NECRONS"
+                      ],
+                      "level": "model"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "source_digest": "fa76137ab07ee4f76b824dca958a349c863299bdfcae9f699bcd6b4eca827041"
+        }
+      },
+      {
+        "path": "data/core/necrons/stratagems.json",
+        "record": {
+          "id": "disharmonisation-cascade-pantheon-of-woe-necrons",
+          "name": "DISHARMONISATION CASCADE",
+          "category": "detachment",
+          "type": "epic-deed",
+          "detachment_id": "pantheon-of-woe",
+          "cp_cost": 1,
+          "phases": [
+            "command",
+            "movement",
+            "shooting",
+            "charge",
+            "fight"
+          ],
+          "player_turn": "either",
+          "timing": "once-per-phase",
+          "target_restrictions": {
+            "required_keywords": [
+              "Monster",
+              "Necrons"
+            ],
+            "count": "one",
+            "side": "your-army",
+            "selects": "model",
+            "bound_to": "triggering-unit"
+          },
+          "ability_id": "disharmonisation-cascade-pantheon-of-woe-necrons",
+          "game_version": {
+            "edition": "11th",
+            "dataslate": "pre-launch-provisional"
+          },
+          "external_refs": [
+            {
+              "namespace": "game-datacards",
+              "id": "c236587e-6f3f-5062-a3e1-28d457193578"
+            },
+            {
+              "namespace": "mfm",
+              "id": "72d226c7-b702-49e6-8bc3-224596ffa74f"
+            }
+          ]
+        }
+      }
+    ],
+    "phase-melding-pantheon-of-woe-necrons": [
+      {
+        "path": "data/enrichment/necrons/abilities.json",
+        "record": {
+          "ability_id": "phase-melding-pantheon-of-woe-necrons",
+          "name": "Phase Melding",
+          "authored_by": "40kdc-community",
+          "game_version": {
+            "edition": "11th",
+            "dataslate": "2026-10-14"
+          },
+          "unit_ids": [],
+          "faction_id": "necrons",
+          "detachment_id": "pantheon-of-woe",
+          "ability_type": "stratagem",
+          "effect": {
+            "type": "ability-part",
+            "trigger": {
+              "event": "move-started",
+              "subject": "event-subject",
+              "filter": {
+                "move_types": [
+                  "fall-back"
+                ]
+              }
+            },
+            "effect": {
+              "type": "sequence",
+              "steps": [
+                {
+                  "type": "conditional",
+                  "condition": {
+                    "type": "matches",
+                    "parameters": {
+                      "subject": "event-subject",
+                      "filter": {
+                        "state": "battle-shocked"
+                      }
+                    }
+                  },
+                  "effect": {
+                    "type": "test",
+                    "target": "event-subject",
+                    "modifier": {
+                      "test": "desperate-escape",
+                      "count": 1,
+                      "per": "model",
+                      "modifier": -1
+                    }
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "condition": {
+                    "operator": "not",
+                    "operands": [
+                      {
+                        "type": "matches",
+                        "parameters": {
+                          "subject": "event-subject",
+                          "filter": {
+                            "state": "battle-shocked"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "effect": {
+                    "type": "test",
+                    "target": "event-subject",
+                    "modifier": {
+                      "test": "desperate-escape",
+                      "count": 1,
+                      "per": "model"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "scope": {
+            "duration": "phase"
+          },
+          "behavior": "reactive",
+          "trigger": {
+            "event": "selected",
+            "subject": {
+              "owner": "enemy",
+              "designated": "unravelling"
+            },
+            "filter": {
+              "move_types": [
+                "fall-back"
+              ],
+              "to": "move"
+            }
+          },
+          "source_digest": "b45606ba47415da92f3654a22d806186bf80be795dbdad3ebed4723fc8079b95"
+        }
+      },
+      {
+        "path": "data/core/necrons/stratagems.json",
+        "record": {
+          "id": "phase-melding-pantheon-of-woe-necrons",
+          "name": "PHASE MELDING",
+          "category": "detachment",
+          "type": "strategic-ploy",
+          "detachment_id": "pantheon-of-woe",
+          "cp_cost": 1,
+          "phases": [
+            "movement"
+          ],
+          "player_turn": "opponent-turn",
+          "timing": "once-per-phase",
+          "target_restrictions": {
+            "required_keywords": [
+              "Necrons"
+            ],
+            "count": "one",
+            "side": "your-army",
+            "selects": "unit",
+            "eligibility": {
+              "type": "matches",
+              "parameters": {
+                "filter": {
+                  "engaged_with": "event-subject"
+                }
+              }
+            }
+          },
+          "ability_id": "phase-melding-pantheon-of-woe-necrons",
+          "game_version": {
+            "edition": "11th",
+            "dataslate": "pre-launch-provisional"
+          },
+          "external_refs": [
+            {
+              "namespace": "game-datacards",
+              "id": "ef2e051f-6a3c-573a-8646-4cba770e8bef"
+            },
+            {
+              "namespace": "mfm",
+              "id": "45720a4c-c9df-4d50-aba2-787547b5fba8"
+            }
+          ]
+        }
+      }
+    ],
+    "reletavistic-tether-pantheon-of-woe-necrons": [
+      {
+        "path": "data/enrichment/necrons/abilities.json",
+        "record": {
+          "ability_id": "reletavistic-tether-pantheon-of-woe-necrons",
+          "name": "Reletavistic Tether",
+          "authored_by": "40kdc-community",
+          "game_version": {
+            "edition": "11th",
+            "dataslate": "2026-10-14"
+          },
+          "unit_ids": [],
+          "faction_id": "necrons",
+          "detachment_id": "pantheon-of-woe",
+          "ability_type": "enhancement",
+          "effect": {
+            "type": "conditional",
+            "condition": {
+              "type": "player-turn-is",
+              "parameters": {
+                "turn": "your-turn"
+              }
+            },
+            "effect": {
+              "type": "sequence",
+              "steps": [
+                {
+                  "type": "ability-part",
+                  "trigger": {
+                    "event": "selected",
+                    "filter": {
+                      "move_types": [
+                        "advance",
+                        "ingress"
+                      ],
+                      "to": "move"
+                    },
+                    "condition": {
+                      "type": "happened",
+                      "parameters": {
+                        "event": "used",
+                        "filter": {
+                          "kind": "ability",
+                          "id": "transdimensional-displacement-necrons"
+                        },
+                        "window": "event"
+                      }
+                    }
+                  },
+                  "effect": {
+                    "type": "move-modifier",
+                    "target": "this-unit",
+                    "modifier": {
+                      "ends_when": {
+                        "operator": "not",
+                        "operands": [
+                          {
+                            "type": "matches",
+                            "parameters": {
+                              "filter": {
+                                "within": {
+                                  "of": {
+                                    "owner": "enemy"
+                                  },
+                                  "range": {
+                                    "inches": 6
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "applies_to_moves": [
+                        "advance",
+                        "ingress"
+                      ],
+                      "ends_when_replaces": true
+                    }
+                  }
+                },
+                {
+                  "type": "ability-part",
+                  "trigger": {
+                    "event": "move-ended",
+                    "filter": {
+                      "move_types": [
+                        "advance",
+                        "ingress"
+                      ]
+                    },
+                    "condition": {
+                      "operator": "and",
+                      "operands": [
+                        {
+                          "type": "happened",
+                          "parameters": {
+                            "event": "used",
+                            "filter": {
+                              "kind": "ability",
+                              "id": "transdimensional-displacement-necrons"
+                            },
+                            "window": "event"
+                          }
+                        },
+                        {
+                          "type": "matches",
+                          "parameters": {
+                            "filter": {
+                              "within": {
+                                "of": {
+                                  "owner": "enemy"
+                                },
+                                "range": {
+                                  "inches": 8
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "effect": {
+                    "type": "permission",
+                    "target": "this-unit",
+                    "modifier": {
+                      "activity": "declare-charge",
+                      "allow": false
+                    }
+                  },
+                  "duration": "turn"
+                }
+              ]
+            }
+          },
+          "scope": {
+            "duration": "permanent"
+          },
+          "behavior": "reactive",
+          "source_digest": "bf177adb57cc85455cf8019afd730f574cd59cab0d32ad89195e894960593948"
+        }
+      }
+    ]
+  }
+}
